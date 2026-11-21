@@ -1,0 +1,5 @@
+block P.aero.*
+block P.hod.starttime
+block P.hod.adctdc_offset
+block P.hod.goodstarttime
+block T.shms.*

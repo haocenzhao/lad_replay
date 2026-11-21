@@ -1,0 +1,9 @@
+# DC diagnostic branches; correct plane names are read directly from T.
+block H.dc.*.rawtdc
+block P.dc.*.rawtdc
+block H.dc.*.time
+block P.dc.*.time
+block H.dc.*.nhit
+block P.dc.*.nhit
+block H.dc.*.RefTime
+block P.dc.*.RefTime

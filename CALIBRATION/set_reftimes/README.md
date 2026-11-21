@@ -1,41 +1,29 @@
-# Reference-time plots / Reference time画图
-
-## Run / 运行
+# Reference time / 参考时间
 
 ```bash
+# Commands below are relative to lad_replay. 先运行replay，完成后单独画图。
+bash CALIBRATION/set_reftimes/replay_reference_time.sh
 bash CALIBRATION/set_reftimes/plot_reference_time.sh
 bash CALIBRATION/set_reftimes/plot_combined_reference_time.sh
 ```
 
-The scripts can be launched from any directory with their full path. All editable settings are at the top:
-RUN_ID or RUN_IDS/RUN_LIST_FILE, INPUT_DIR, HMS/SHMS_INPUT_PATTERN, OUTPUT_DIR, EVENTS, PARAM_RUN,
-fixed axis maxima, REF_DETAIL_WIDTH, REF_MULT_RATIO, database/parameter overrides, executables and log/work paths.
-脚本顶部集中设置run、输入/输出路径、参数来源和绘图范围。RUN_LIST_FILE覆盖RUN_IDS，每行一个run，支持#注释。
+Edit settings at the top of each script: RUN_ID, EVENTS (-1 = all), RAW_DIR,
+RAW_PATTERN (Production or Production_noGEM), OUTPUT_DIR, and environment settings.
+先改脚本顶部的run、事件数、raw类型及输入/输出路径。输出已存在时replay会停止，保留旧数据。
+Load HCANA/ROOT/LADlib first, or set ENV_SETUP.
+Replay runs directly and only generates replay ROOT files; it never starts plotting.
+普通脚本直接解包，不提交Slurm、不自动画图。Python plotting needs pypdf.
+Changing replay OUTPUT_DIR requires changing the matching plotting INPUT_DIR too.
+修改解包输出目录后，画图的INPUT_DIR也需对应修改。Plots/raw/replayed ROOTs are not committed.
 
-## Replay inputs / 输入
+- `code/replay_reference_events_hms.C`, `...shms.C`: no-ref replay with wide downstream timing windows.
+- `code/hms_reference_events.def`, `shms_reference_events.def`: save `T.hms.*` / `T.shms.*`, including EDTM and hDCREF1–5/pDCREF1–10.
+- `reference_time_setup_lad.C`: multiplicity, fixed/detailed ref-time views and EDTM overlays.
+- `combine_reference_time_histograms_lad.C`: sum saved per-run plot histograms; run single plots first.
+- `plot_*.sh`: edit RUN_ID or RUN_IDS/RUN_LIST_FILE, input patterns, ranges and output paths at the top.
 
-Single-run plots require **no-reference-time replay**, with wide downstream timing windows and complete reference branches,
-including hDCREF1-5 / pDCREF1-10 and the corresponding EDTM monitor branches.
-Default patterns select the existing `*_noReferenceTime_refEvents_*` files. Change the patterns for another compatible replay.
-Missing branches fail explicitly; they are not silently drawn as empty channels.
-These are selected reference hits and recorded multiplicities, not all raw TDC hardware hits.
-
-Combined plots read the saved **per-run reference plot ROOT files**, retaining the histograms/, mult categories and EDTM subsets.
-Run the single-run script for any new run first. Change INPUT_DIR and filename patterns to locate those plot files.
-The combined script sums full saved histograms, not PDFs or truncated visible ranges. It then redraws with the same macro.
-PARAM_RUN defaults to the first combined run and selects the production cut overlays; combine only compatible run periods.
-
-## Output and selection / 输出与筛选
-
-One HMS PDF/ROOT pair and one SHMS PDF/ROOT pair are written under OUTPUT_DIR/<run or OUTPUT_TAG>/.
-Each reference has one page: multiplicity (including zero), fixed-range time and detailed time.
-Blue time histograms require mult>0. The red overlay sums sufficiently populated categories among mult1/2/3,
-using REF_MULT_RATIO (default10). Green dashed overlays tag the matching arm's EDTM monitor mult>0 and rawtime>0,
-and are drawn last. This is an EDTM-monitor tag, not an independent proof of a hardware trigger type.
-The detailed width defaults to about1200 channels, expanding if needed to include resolved ordinary/EDTM peaks.
-EVENTS is only the existing filename event-count label; no replay is performed and no events are newly discarded by that setting.
-
-Original `reference_time_setup.C` is retained unchanged. Active code is `reference_time_setup_lad.C` plus the combined histogram helper.
-Shared PDF/driver helpers live in ../set_timing_windows; move the complete CALIBRATION folder together.
-Use a configured HCANA environment and Python with pypdf. ENV_SETUP is optional; logs and scratch are outside the repository.
-The user-level package cache already on the existing server is only a fallback; other machines can install pypdf normally.
+Blue: mult>0. Red: selected mult1/2/3 categories (REF_MULT_RATIO=10).
+Green dashed: matching EDTM monitor mult>0 and raw time>0; drawn last.
+Cut lines use production parameters selected by PARAM_RUN (default: run/first combined run).
+EVENTS in plot scripts is a filename label. Detailed width defaults to about1200 channels.
+Original `reference_time_setup.C` is retained. Shared helpers live in ../set_timing_windows.
