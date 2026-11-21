@@ -47,7 +47,7 @@ def main():
             prefix = "hms_LADCOIN" if arm == "hms" else "shms"
             tasks.append(
                 (
-                    timing + f"replay_code/replay_no_timing_windows_{arm}_lad.C",
+                    timing + f"HMS+SHMS/code/replay_no_timing_windows_{arm}_lad.C",
                     f"replay_no_timing_windows_{arm}_lad",
                     output / f"{prefix}_noTimingWindows_{run}_{events}.root",
                     "",

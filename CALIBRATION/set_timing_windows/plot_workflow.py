@@ -165,7 +165,7 @@ def main():
                 includes = (
                     [refs / "reference_time_setup_lad.C"]
                     if workflow == "ref"
-                    else [timing / "timing_window_setup_lad.C"]
+                    else [timing / "HMS+SHMS/code/timing_window_setup_lad.C"]
                 )
                 body = ""
                 if mode == "combined":
@@ -177,7 +177,7 @@ def main():
                         body += f'combine_reference_inputs_lad({vector(data)},{cpp(arm.lower())},{cpp(source)},{{{",".join(map(str,runs))}}});\n'
                     else:
                         includes.append(
-                            timing / "combine_timing_window_histograms_lad.C"
+                            timing / "HMS+SHMS/code/combine_timing_window_histograms_lad.C"
                         )
                         body += f'if(!combine_timing_window_histograms_lad({vector(data)},{arm.lower()}_timing_window_histogram_names_lad(),{cpp(source)}))throw std::runtime_error("Histogram combination failed");\n'
                 if workflow == "ref":

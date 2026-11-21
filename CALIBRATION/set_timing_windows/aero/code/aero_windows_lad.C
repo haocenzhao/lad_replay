@@ -1,4 +1,4 @@
-#include "../../timing_window_setup_lad.C"
+#include "../../HMS+SHMS/code/timing_window_setup_lad.C"
 #include <TTree.h>
 #include <TH2F.h>
 #include <THcGlobals.h>
