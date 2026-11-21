@@ -17,13 +17,13 @@
 
 ; determined for LAD 2025
 ; cut variable = hDCREF2
- hdc_tdcrefcut=-20874.
+ hdc_tdcrefcut=-20700.
 ; cut variable = hT2
- hhodo_tdcrefcut=-31799.
+ hhodo_tdcrefcut=-31600.
 ; cut variable = hFADC_TREF_ROC1
- hhodo_adcrefcut=-4032.
- hcer_adcrefcut=-4032.
- hcal_adcrefcut=-4032.
+ hhodo_adcrefcut=-3900.
+ hcer_adcrefcut=-3900.
+ hcal_adcrefcut=-3900.
 
 ; determined for fall 2019 startup
 ; cut variable = hDCREF2

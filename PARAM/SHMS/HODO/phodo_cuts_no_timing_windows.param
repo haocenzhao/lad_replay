@@ -69,7 +69,7 @@ phodo_NegAdcTimeWindowMin = -200., -200., -200., -200.,
                       	    -200., -200., -200., -200.,
             		    -200., -200., -200., -200.,
 
-hodo_NegAdcTimeWindowMax =  200., 200., 200., 200.,
+phodo_NegAdcTimeWindowMax =  200., 200., 200., 200.,
           		    200., 200., 200., 200.,
                 	    200., 200., 200., 200.,
                 	    200., 200., 200., 200.,
@@ -91,4 +91,4 @@ hodo_NegAdcTimeWindowMax =  200., 200., 200., 200.,
                 	    200., 200., 200., 200.
 
 ; pscin_tdc_max       maximum allowed tdc value                                 
-pscin_tdc_max = 1000
+pscin_tdc_max = 1600
