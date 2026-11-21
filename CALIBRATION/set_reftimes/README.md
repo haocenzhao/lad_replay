@@ -1,35 +1,41 @@
-# Hall C Reference Time Setting Code
+# Reference-time plots / Reference time画图
 
-1. The scripts in reference_time_setup.C is used to visualize the current reference time cuts being applied.
-2. The user can take this information and set new reference time cuts in the corresponding DAQ setup (hms, shms, coin).
-3. Once the new reference times are set, the code can be re-ran to validate the changes were properly applied.
+## Run / 运行
 
-## Scripts within reference_time_setup.C
-run_hms_reference_time_setup
-run_shms_reference_time_setup
-run_coin_reference_time_setup
+```bash
+bash CALIBRATION/set_reftimes/plot_reference_time.sh
+bash CALIBRATION/set_reftimes/plot_combined_reference_time.sh
+```
 
-The following are the inputs:
-(TString infile, int RunNumber, TString outfile="move_me.root")
-1. infile is the full path to the root file replayed by SCRIPTS/<SHMS,HMS,COIN>/TIMING/replay_no_reference_times_<shms,hms,coin>.C
-2. RunNumber is the same run number used in the replay script.  This is used to initialize the gHcParms with the previous reference times.
-3. outfile is the default output file containing canvases of the desired plots.
+The scripts can be launched from any directory with their full path. All editable settings are at the top:
+RUN_ID or RUN_IDS/RUN_LIST_FILE, INPUT_DIR, HMS/SHMS_INPUT_PATTERN, OUTPUT_DIR, EVENTS, PARAM_RUN,
+fixed axis maxima, REF_DETAIL_WIDTH, REF_MULT_RATIO, database/parameter overrides, executables and log/work paths.
+脚本顶部集中设置run、输入/输出路径、参数来源和绘图范围。RUN_LIST_FILE覆盖RUN_IDS，每行一个run，支持#注释。
 
-## Running the Calibration
-For detailed information on reference times and timing windows, please see Carlos Yero's First Steps:
-https://hallcweb.jlab.org/doc-private/ShowDocument?docid=1032
-1. First replay the desired run with the devoted replay script: replay_no_reference_times_<shms,hms,coin>.  The purpose of this script is to replay the data FAST and produce specific histograms that will be used in the following steps.  You cannot use the production replay, this replay has specific DEF-files.
-2. Load the reference time setup scripts with hcana.  Similar to a replay, this script REQUIRES hcana, you cannot just use root.  
-`.L CALIBRATION/set_reftimes/reference_time_setup.C`
-3. Run the appropriate script based on the DAQ configuration.  If you have a simple SHMS DAQ, use the run_shms_reference_time_setup with the appropriate inputs found above.  **Note: The CALIBRATION script loads gHcParms with the hard coded script.  If you changed the gHcParms->Load() statements in your production replay script, the cuts displayed could be  different from your production running. Ensure that the gHcParms in the CALIBRATION script are the same as those for production runnning.  Ideally, they would use the same setup, but this would require changes to how SCRIPTS are made in hallc_replay.**
-4. Close hcana and open the output root file.  The default is move_me.root. **Move this file to a location and name to keep for your records.** Check to see that the orange cut lines are all **to the left** of the main reference time peaks required for your experiment**.  Several histograms may appear in different colors on top of each other.  These correspond to different multiplicity cuts. If you know what you are looking for, you can select a tighter reference time cut, but for most Hall C physics, we try to let the detectors select out bad events, no reference times.  
-5. Change the corresponding reference time cuts if required in: `PARAM/<SHMS,HMS,COIN>/GEN/<p,h>_reftime_cut.param`.  **Note: the files changed must be the ones actually being loaded by hcana.  For instance, the COIN DAQ may load PARAM/HMS/GEN/h_reftime_cut_coindaq.param.  Check this in your standard.dbase or general.param files.**
-6. Repeat these steps to validate your changes took place.
+## Replay inputs / 输入
 
-## LAD Quick Start Guide
-Scripts in SHMS and HMS have been updated with correct file names and param files.
+Single-run plots require **no-reference-time replay**, with wide downstream timing windows and complete reference branches,
+including hDCREF1-5 / pDCREF1-10 and the corresponding EDTM monitor branches.
+Default patterns select the existing `*_noReferenceTime_refEvents_*` files. Change the patterns for another compatible replay.
+Missing branches fail explicitly; they are not silently drawn as empty channels.
+These are selected reference hits and recorded multiplicities, not all raw TDC hardware hits.
 
-`hcana -l -q "SCRIPTS/LAD_COIN/TIMING/replay_no_reference_times_hms.C(XXX,YYY)"`
-`hcana`
-`.L CALIBRATION/set_reftimes/reference_time_setup.C`
-`run_hms_reference_time_setup("ROOTfiles/CALIB/hms_noReferenceTime_XXX_YYY.root",22016,"CALIBRATION/set_reftimes/hms_ref_time")`
+Combined plots read the saved **per-run reference plot ROOT files**, retaining the histograms/, mult categories and EDTM subsets.
+Run the single-run script for any new run first. Change INPUT_DIR and filename patterns to locate those plot files.
+The combined script sums full saved histograms, not PDFs or truncated visible ranges. It then redraws with the same macro.
+PARAM_RUN defaults to the first combined run and selects the production cut overlays; combine only compatible run periods.
+
+## Output and selection / 输出与筛选
+
+One HMS PDF/ROOT pair and one SHMS PDF/ROOT pair are written under OUTPUT_DIR/<run or OUTPUT_TAG>/.
+Each reference has one page: multiplicity (including zero), fixed-range time and detailed time.
+Blue time histograms require mult>0. The red overlay sums sufficiently populated categories among mult1/2/3,
+using REF_MULT_RATIO (default10). Green dashed overlays tag the matching arm's EDTM monitor mult>0 and rawtime>0,
+and are drawn last. This is an EDTM-monitor tag, not an independent proof of a hardware trigger type.
+The detailed width defaults to about1200 channels, expanding if needed to include resolved ordinary/EDTM peaks.
+EVENTS is only the existing filename event-count label; no replay is performed and no events are newly discarded by that setting.
+
+Original `reference_time_setup.C` is retained unchanged. Active code is `reference_time_setup_lad.C` plus the combined histogram helper.
+Shared PDF/driver helpers live in ../set_timing_windows; move the complete CALIBRATION folder together.
+Use a configured HCANA environment and Python with pypdf. ENV_SETUP is optional; logs and scratch are outside the repository.
+The user-level package cache already on the existing server is only a fallback; other machines can install pypdf normally.

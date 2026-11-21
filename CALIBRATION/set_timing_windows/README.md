@@ -1,43 +1,71 @@
-# Hall C Timing Window Setting Code
+# Timing-window plots / 时间窗口检查图
 
-1. The scripts in timing_window_setup.C are used to visualize the current timing window cuts being applied and reset the if necessary.
-2. If setting the timing windows with this script, it is highly recommended to visualize the cuts and ensure they are being applied properly.
-3. Once the new timing windows are set, the code can be re-ran to validate the changes were properly applied.
+All scripts run plots directly in the current replay environment; they never submit Slurm or start replay.
+所有脚本只画图，不提交Slurm、不自动replay、不修改参数。
 
-## Scripts within timing_window_setup.C
-calc_timing_windows - Used by the run_<spec>_timing_windows codes
-run_hms_timing_windows - Used for HMS DAQ
-run_shms_timing_windows - Used for SHMS DAQ
-run_coin_timing_windows - Used for COIN DAQ
+## Edit settings first / 先改脚本顶部
 
-The following are the inputs:
-(TString file_name, TString out_file, int RunNumber, bool newWindows=false, double width=40., TString spec="shms")
-1. infile is the full path to the root file replayed by SCRIPTS/<SHMS,HMS,COIN>/TIMING/replay_no_timing_windows_<shms,hms,coin>.C
-2. outfile is the default output file containing canvases of the desired plots. **Must be set**
-3. RunNumber is the same run number used in the replay script.  This is used to initialize the gHcParms with the previous timing windows.
-4. Bool newWindows is used to set new windows if desired.
-5. Uses the peak position found using TSpectrum in the timing windows and outputs a cut that is +/- width/2 from the peak.
-6. spec is used to run the run_coin_timing_windows script.  You can optionally run just one arm of the COIN DAQ by changing spec to coin.
+Each entry starts with RUN_ID (single), or RUN_IDS / RUN_LIST_FILE (combined), then INPUT_DIR,
+input filename patterns, OUTPUT_DIR, EVENTS, PARAM_RUN, database/parameter sources, and plot ranges.
+PEAK_MIN_ENTRIES, PEAK_SEARCH_SIGMA and PEAK_SEARCH_THRESHOLD expose the existing peak-search settings.
+每个脚本最开头集中设置run、读取/保存路径、文件名规则、参数run和绘图范围。
+A RUN_LIST_FILE overrides RUN_IDS; use one run ID per line, with optional # comments.
+Filename patterns use {run} and {events}. EVENTS is a filename label, not a new event selection.
+PARAM_RUN defaults to the selected run or first combined run; its production parameters supply cut lines.
+Choose runs from one compatible timing/offset period when combining. No automatic run exclusions are applied.
 
-## Running the Calibration
-For detailed information on reference times and timing windows, please see Carlos Yero's First Steps:
-https://hallcweb.jlab.org/doc-private/ShowDocument?docid=1032
-1. First replay the desired run with the devoted replay script: replay_no_timing_windows_<shms,hms,coin>.  The purpose of this script is to replay the data FAST and produce specific histograms that will be used in the scripts mentioned above.  You cannot use the production replay, the above scripts require specific DEF-files.  
-2. Load the timing window setup scripts with hcana.  Similar to a replay, this script REQUIRES hcana, you cannot just use root.  
-`.L CALIBRATION/set_timing_windows/timing_window_setup.C`
-3. Run the appropriate script based on the DAQ configuration.  If you have a simple SHMS DAQ, use the run_shms_timing_window_setup with the appropriate inputs found above (you can click tab after the paraenthesis to show the usage after loading the script).  **Note: The CALIBRATION script loads gHcParms with the hard coded script.  If you changed the gHcParms->Load() statements in your production replay script, the cuts displayed could be different from your production running. Ensure that the gHcParms in the CALIBRATION script are the same as those for production runnning.  Ideally, they would use the same setup, but this would require changes to how SCRIPTS are made in hallc_replay.**
-4. Close hcana and open the output root file.  There is no default file name, so you must give one. **Move this file to a location and name to keep for your records.** Once open, look at the cut lines (in red or green).  Cuts that do not encapsulate the found peak are colored RED while those that encapsulate the peak are GREEN.  The found peak may not always be the correct peak, especially if there are few statistics.  If all or most of the peaks are GREEN, then continue to adjust the timing window cuts by hand.  If they are mostly red, you can use the automatic functionality of the script to output the CUT files to be updated in hallc_replay.
-5. Change the corresponding timing window cuts if required in: `PARAM/<SHMS,HMS,COIN>/<DETEC>/<p,h><detec>_cuts.param`.  **Note: Check with the top of the production replay to see which CUTS files need altered.**
-6. Repeat these steps to validate your changes took place.
+## Entry scripts / 运行入口
 
-'''
-To output the **new** timing window cuts to the screen in hallc_replay format, simply change newWindows to *true* and change the width to the desired value.  Copy the output timing windows by hand to a new cut or replace the existing cuts.  
-'''
+Run from any directory with bash and the full path to the desired script:
 
-## LAD Quick Start Guide
-Scripts in SHMS and HMS have been updated with correct file names and param files.
+| Check | Single run | Combined runs |
+|---|---|---|
+| Hodo, calorimeters, gas Cherenkovs | `plot_timing_windows_lad.sh` | `plot_combined_timing_windows_lad.sh` |
+| SHMS AERO | `aero/plot_aero.sh` | `aero/plot_combined_aero.sh` |
+| HMS/SHMS DC | `DC/plot_DC.sh` | `DC/plot_combined_DC.sh` |
+| HMS/SHMS TRIG diagnostics | `trig/plot_trig.sh` | `trig/plot_combined_trig.sh` |
 
-`hcana -l 'SCRIPTS/HMS/TIMING/replay_no_timing_windows_hms.C(22017,-1)'`
-`hcana`
-`.L CALIBRATION/set_timing_windows/timing_window_setup.C(22017,-1)`
-`run_hms_timing_windows("ROOTfiles/CALIB/hms_noTimingWindows_22017_-1.root","CALIBRATION/set_timing_windows/hms_timing_windows.root",22017)`
+Examples relative to lad_replay:
+
+```bash
+bash CALIBRATION/set_timing_windows/plot_timing_windows_lad.sh
+bash CALIBRATION/set_timing_windows/aero/plot_aero.sh
+bash CALIBRATION/set_timing_windows/DC/plot_combined_DC.sh
+bash CALIBRATION/set_timing_windows/trig/plot_trig.sh
+```
+
+Settings can also be supplied as environment variables, e.g. RUN_ID=22138 OUTPUT_DIR=/tmp/review bash ... .
+
+## Required ROOT inputs / 应使用哪种replay
+
+| Check | Input |
+|---|---|
+| Regular detectors | Dedicated **no-timing-windows replay** ROOTs, containing the existing PMT-vs-time TH2 histograms. HMS and SHMS inputs are separate. |
+| AERO | **SHMS no-timing-windows replay** ROOT with `P.aero.goodPos/NegAdcTdcDiffTime` and `P.aero.goodPos/NegAdcMult`, seven PMTs per side. Existing `aero_inputs/` files meet this requirement. The ordinary no-timing DEF may omit these branches; export `P.aero.*` when replaying a new run. |
+| DC | No-timing DC diagnostic replay ROOT with both `H.dc.*.rawtdc` and `P.dc.*.rawtdc`. For comparison also provide the matching spectrometers-only ROOT. Keep per-wire tzero enabled and use the same event sample. Existing DC `_work/.../DC_replay/` inputs are reused, not copied or deleted. |
+| TRIG | Existing spectrometers-only/production ROOT containing `T.hms.*` and `T.shms.*`. These plots diagnose the currently broad windows; they do not install narrower cuts. |
+
+Regular/AERO windows are in ns. DC and TRIG raw axes are in channels.
+TRIG uses selected scalar hits/pulses with mult>0, not every hardware hit; silent channels stay visible.
+TRIG non-empty axes use the selected min/max, with a floating-point-safe inclusive maximum; a single value uses one bin.
+DC fills all stored selected-hit entries in each plane array, with no added multiplicity cut or normalization.
+AERO retains its existing mult>0 and |diffTime|<1000 selection, [-450,450] ns display and one peak marker.
+
+## Outputs / 输出
+
+Output is OUTPUT_DIR/<run or OUTPUT_TAG>/, with one PDF and ROOT per spectrometer where applicable.
+Regular plots retain standard and detailed PDFs plus original/detailed ROOT directories (DETAILED=1).
+AERO has one standard PDF/ROOT pair. TRIG has one pair for HMS and one for SHMS; ADC and TDC never share a page.
+DC_MODE is both, no_timing, or comparison; DC writes to OUTPUT_DIR/no_timing_windows/<tag>/ and/or comparison/<tag>/.
+Combined scripts sum source histograms/data and redraw using the same plotting code; they do not concatenate PDFs.
+Only plot files are published to output directories. Logs go to LOG_DIR, temporary files to WORK_DIR and are removed.
+Existing matching outputs are replaced only after a successful drawing/export pass; unrelated files are retained.
+
+## Environment / 环境
+
+Load the normal HCANA/LAD replay environment first, or set ENV_SETUP, HCANA_BIN and PYTHON_BIN at the top.
+Python needs pypdf (`python3 -m pip install --user pypdf`). The existing server also has a user-level fallback package cache.
+Original upstream `timing_window_setup.C` is retained unchanged. The active macro is `timing_window_setup_lad.C`.
+`plot_common.h` and `plot_workflow.py` are shared helpers. AERO directly includes the shared active macro; no dated snapshots are used.
+The scripts derive the repository location from their own paths, so a checkout can be moved or uploaded to GitHub.
+No data files, logs, vendored Python archives, Slurm studies or run-specific manifests belong in this source folder.
